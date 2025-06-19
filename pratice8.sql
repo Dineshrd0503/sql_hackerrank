@@ -1,0 +1,114 @@
+```sql
+-- Question: Find the Current Salary of Each Employee with Annual Increases
+--
+-- Problem Statement:
+-- You have a table containing employee salary records, some of which are old and
+-- contain outdated salary information. Your task is to find the current salary of each
+-- employee, assuming salaries increase by 5% annually (compounded). Output the
+-- employee ID, first name, last name, department ID, and current salary. Order the results by
+ employee_id ASC.
+--
+-- Tables and Schema:
+-- The table is named `ms_employee_salary` and has the following schema:
+--
+--
+-- Table: ms_employee_salary
+-- | Column Name     | Data Type |
+-- |-----------------|-----------|
+-- | id              | bigint    |
+-- | first_name      | text      |
+-- | last_name       | text      |
+-- | salary          | bigint    |
+-- | department_id   | bigint    |
+-- | record_date     | date      |
+--
+-- - Notes:
+-- - The `id` column uniquely identifies each employee.
+-- - The `record_date` column indicates when each salary record was created, allowing identification of the most recent record for each employee.
+-- - Multiple records may exist per employee, with different salaries and record dates.
+-- - The `salary` column stores the salary at the time of the record.
+-- - The `department_id` column references a department in a foreign key relationship (department table not needed for this query).
+-- - Assume at least one record exists per employee, and critical columns (`first_name`, `last_name`, `salary`, `record_date`) are non-NULL.
+-- - The current date is June 19, 2025, and salaries increase by 5% annually, compounded (i.e., `salary * (1.05)^years`).
+-- - If multiple records have the same `record_date` for an employee, select one arbitrarily (or the highest salary if tie-breaking is needed).
+--
+-- Requirements:
+-- - Output columns: `id`, `first_name`, `last_name`, `department_id`, `current_salary`.
+-- - Order the results by `id` in ascending order.
+-- - Use a `GROUP BY` approach to identify the most recent salary record, inspired by the provided query:
+--   ```
+--   select id, first_name, last_name, department_id, max(salary)
+--   from ms_employee_salary
+--   group by department_id, id, first_name, last_name
+--   order by id;
+--   ```
+-- - Adjust the salary for annual 5% compound increases based on the time elapsed since the record date.
+--
+-- Solution:
+--
+select id,first_name,last_name,department_id,max(salary)
+
+from ms_employee_salary
+group by department_id,id,first_name,last_name
+order by id;
+
+as per my revoius requirment scretae problme solution using this
+
+-- Explanation of the Code:
+--
+-- The provided query attempted to find the maximum salary per employee using `GROUP BY`:
+-- ```
+-- select id, first_name, last_name, department_id, max(salary)
+-- from ms_employee_salary
+-- group by department_id, id, first_name, last_name
+-- order by id;
+-- ```
+-- However, it has limitations:
+-- - It uses `MAX(salary)` without considering `record_date`, so it doesn't guarantee the most recent record.
+-- - It groups by `department_id`, `first_name`, and `last_name`, which may not be necessary if these don't change per employee.
+-- - It doesn't adjust for the 5% annual salary increase required by the problem.
+--
+-- The solution above uses a `GROUP BY` approach to find the most recent record per employee based on `record_date` and adjusts the salary accordingly. Here's a detailed breakdown:
+--
+-- 1. CTE: LatestRecord
+--    - Purpose: Identifies the most recent `record_date` for each employee.
+--    - GROUP BY id: Groups records by `id` to ensure one result per employee.
+--    - MAX(record_date): Selects the latest `record_date` for each `id`, aliased as `latest_date`.
+--    - Result: A table with two columns (`id`, `latest_date`), containing the most recent record date for each employee.
+--
+-- 2. Main Query:
+--    - JOIN: Joins `ms_employee_salary` with `LatestRecord` on `e.id = lr.id` and `e.record_date = lr.latest_date` to retrieve the full record (including `first_name`, `last_name`, `department_id`, `salary`) for each employee's most recent `record_date`.
+--    - SELECT Columns:
+--      - `e.id`, `e.first_name`, `e.last_name`, `e.department_id`: Output directly from the most recent record.
+--      - Current Salary Calculation:
+--        - `DATEDIFF(YEAR, e.record_date, '2025-06-19')`: Calculates the number of years between the `record_date` and June 19, 2025 (current date).
+--        - `POWER(1.05, ...)`: Computes `(1 + 0.05)^years` for a 5% compound annual increase.
+--        - `e.salary * POWER(...)`: Adjusts the original salary by the compound increase factor.
+--        - `ROUND(...)`: Rounds the result to the nearest integer, assuming salaries are whole numbers (as `salary` is `bigint`).
+--    - ORDER BY e.id ASC: Sorts the result by `id` in ascending order.
+--
+-- 3. Assumptions and Considerations:
+--    - Assumes `ms_employee_salary` includes a `record_date` column (type `date`) to determine recency, as implied by "old records" and the need for current salaries.
+--    - Assumes `first_name`, `last_name`, and `department_id` are consistent per employee; if they vary, the most recent record's values are used.
+--    - If multiple records exist for the same `id` and `record_date`, the query may return multiple rows per employee. To handle ties, you could add a tie-breaker (e.g., `MAX(salary)` in the join).
+--    - If `record_date` is in the future (> June 19, 2025), `DATEDIFF` may return a negative number, reducing the salary. To prevent this, use `GREATEST(0, DATEDIFF(...))`.
+--    - The 5% compound increase is assumed; if a different rate or simple increase is needed, adjust the formula (e.g., simple: `salary * (1 + 0.05 * years)`).
+--
+-- 4. Why GROUP BY?
+--    - The provided query used `GROUP BY department_id, id, first_name, last_name`, which is overly restrictive and assumes these columns don't change. The solution simplifies to `GROUP BY id` in the CTE to find the latest `record_date`.
+--    - `GROUP BY` is used to aggregate `record_date` values per `id`, but it requires a join to retrieve other columns, unlike a window function approach (e.g., `ROW_NUMBER()`).
+--    - An alternative using `ROW_NUMBER()` (as suggested previously) would be simpler, but this solution honors the `GROUP BY` requirement inspired by the provided query.
+--
+-- Order of Execution:
+--
+-- 1. CTE: LatestRecord
+--    - FROM ms_employee_salary: Accesses the `ms_employee_salary` table.
+--    - GROUP BY id: Groups records by `id`.
+--    - SELECT id, MAX(record_date): Computes the maximum `record_date` per `id`, aliased as `latest_date`.
+--    - Result: A table with one row per `id`, containing the most recent `record_date`.
+--
+-- 2. Main Query:
+--    - FROM ms_employee_salary e JOIN LatestRecord lr: Joins the original table with the CTE on `e.id = lr.id` and `e.record_date = lr.latest_date` to get the full record for each employee's most recent date.
+--    - SELECT:
+--      - Outputs `e.id`, `e.first_name`, `e.last_name`, `e.department_id`.
+--      - Calculates `current_salary` using `ROUND(e.salary * POWER(1.05, DATEDIFF(YEAR, e.record_date, '2025

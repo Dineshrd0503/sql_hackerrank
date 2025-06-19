@@ -1,0 +1,174 @@
+```sql
+-- Question: Find the Last Time Each Bike Was in Use
+--
+-- Problem Statement:
+-- You are tasked with finding the last time each bike was in use. For each bike, output the bike number
+-- and the date-timestamp of its last use (i.e., the date-time the bike was returned). Order the results
+-- by bikes that were most recently used, meaning the bike with the latest return time should appear first.
+--
+-- Tables and Schema:
+-- The table is named `bike_usage` and has the following schema:
+--
+-- Table: bike_usage
+-- | Column Name   | Data Type      |
+-- |---------------|----------------|
+-- | bike_number   | bigint         |
+-- | return_time   | datetime       |
+--
+-- Notes:
+-- - The `bike_number` column uniquely identifies each bike.
+-- - The `return_time` column represents the date-timestamp when the bike was returned, indicating its
+--   last use.
+-- - Additional columns (e.g., start_time, user_id) may exist but are not needed for this query.
+-- - Assume at least one record exists per bike, and `return_time` is non-NULL.
+-- - If multiple records have the same `return_time` for a bike, selecting one is sufficient.
+-- - The current date is June 19, 2025, but it is not needed for this query as no calculations are
+--   performed relative to the current date.
+--
+-- Requirements:
+-- - Output columns: `bike_number`, `last_used` (the date-timestamp of the last use).
+-- - Order the results by bikes that were most recently used (i.e., by `last_used` in descending order).
+-- - Use a `GROUP BY` approach to find the most recent `return_time` per bike, inspired by the question
+--   about using `ORDER BY`.
+--
+-- Solution:
+--
+SELECT bike_number, MAX(return_time) AS last_used
+FROM bike_usage
+GROUP BY bike_number
+ORDER BY last_used DESC;
+
+-- Explanation of the Code:
+--
+-- The query uses a `GROUP BY` approach to find the most recent return time for each bike and sorts
+-- the results by the most recent usage. Here's a detailed breakdown:
+--
+-- 1. SELECT Clause:
+--    - `bike_number`: Outputs the unique identifier for each bike.
+--    - `MAX(return_time) AS last_used`: Computes the most recent return timestamp for each bike,
+--      aliased as `last_used` for clarity in the output.
+--
+-- 2. GROUP BY bike_number:
+--    - Groups records by `bike_number`, ensuring one row per bike.
+--    - The `MAX(return_time)` function aggregates within each group to select the latest timestamp.
+--
+-- 3. ORDER BY last_used DESC:
+--    - Sorts the results by the `last_used` column (maximum `return_time`) in descending order.
+--    - Using `DESC` ensures bikes with the most recent return times appear first, as required by
+--      "order by bikes that were most recently used." For example, a bike returned on
+--      2025-06-19 15:00:00 appears before one returned on 2025-06-18 10:00:00.
+--
+-- 4. Assumptions and Considerations:
+--    - Assumes the `bike_usage` table exists with `bike_number` (bigint) and `return_time` (datetime).
+--    - Assumes `return_time` is non-NULL; if NULLs exist, a `WHERE return_time IS NOT NULL` clause
+--      could be added before `GROUP BY`.
+--    - If multiple records for a bike have the same `return_time`, `MAX` selects one arbitrarily,
+--      which is sufficient per the problem.
+--    - The query is compatible with standard SQL databases (e.g., MySQL, PostgreSQL, SQL Server).
+--
+-- 5. Why DESC for ORDER BY?
+--    - The requirement "order by bikes that were most recently used" means sorting by the latest
+--      `return_time`. In SQL, descending order (`DESC`) places higher (more recent) timestamps first,
+--      while ascending order (`ASC`) would prioritize older timestamps, which would incorrectly order
+--      bikes used least recently first.
+--
+-- 6. Alternative Approach:
+--    - A window function approach using `ROW_NUMBER()` could be used for greater flexibility, especially
+--      if additional columns from the most recent record are needed:
+--      ```
+--      WITH RankedRecords AS (
+--          SELECT 
+--              bike_number,
+--              return_time,
+--              ROW_NUMBER() OVER (PARTITION BY bike_number ORDER BY return_time DESC) AS rn
+--          FROM bike_usage
+--      )
+--      SELECT bike_number, return_time AS last_used
+--      FROM RankedRecords
+--      WHERE rn = 1
+--      ORDER BY last_used DESC;
+--      ```
+--    - The `GROUP BY` solution is chosen for simplicity, as it directly meets the requirement
+--      without additional complexity.
+--
+-- Order of Execution:
+--
+-- 1. FROM bike_usage:
+--    - Accesses the `bike_usage` table.
+--
+-- 2. GROUP BY bike_number:
+--    - Groups records by `bike_number`, creating one group per bike.
+--
+-- 3. SELECT bike_number, MAX(return_time):
+--    - Outputs `bike_number` and computes the maximum `return_time` within each group, aliased as
+--      `last_used`.
+--
+-- 4. ORDER BY last_used DESC:
+--    - Sorts the result by `last_used` in descending order, placing bikes with the most recent
+--      return times first.
+--
+-- 5. Output:
+--    - A table with columns `bike_number` and `last_used`, sorted by `last_used` DESC.
+--
+-- Expected Output:
+--
+-- Assuming the following sample data in `bike_usage`:
+-- | bike_number | return_time         |
+-- |-------------|---------------------|
+-- | 1           | 2025-06-18 10:00:00 |
+-- | 1           | 2025-06-19 12:00:00 |
+-- | 2           | 2025-06-17 15:00:00 |
+-- | 3           | 2025-06-19 08:00:00 |
+--
+-- Result:
+-- | bike_number | last_used           |
+-- |-------------|---------------------|
+-- | 1           | 2025-06-19 12:00:00 |
+-- | 3           | 2025-06-19 08:00:00 |
+-- | 2           | 2025-06-17 15:00:00 |
+--
+-- Explanation:
+-- - Bike 1 was last used on 2025-06-19 12:00:00 (most recent).
+-- - Bike 3 was last used on 2025-06-19 08:00:00 (second most recent).
+-- - Bike 2 was last used on 2025-06-17 15:00:00 (least recent among these).
+-- - The `ORDER BY last_used DESC` ensures Bike 1 appears first, followed by Bike 3, then Bike 2.
+--
+-- Notes:
+--
+-- - Database Compatibility:
+--   - The query uses standard SQL (`GROUP BY`, `MAX`, `ORDER BY`), compatible with MySQL,
+--     PostgreSQL, SQL Server, and Oracle.
+--   - Ensure `return_time` is a `datetime` or `timestamp` type in the database.
+--
+-- - Edge Cases:
+--   - Empty Table: Returns no rows (handled implicitly).
+--   - Ties: If multiple records for a bike have the same `return_time`, `MAX` selects one
+--     arbitrarily. For deterministic tie-breaking, the window function approach could add
+--     criteria (e.g., `ORDER BY return_time DESC, bike_number`).
+--   - NULL Values: Assumes `return_time` is non-NULL. If NULLs exist, add
+--     `WHERE return_time IS NOT NULL` before `GROUP BY`.
+--
+-- - Performance:
+--   - Indexes on `bike_number` and `return_time` improve efficiency, especially for large
+--     datasets. A composite index on `(bike_number, return_time DESC)` would optimize the
+--     `GROUP BY` and `MAX` operations.
+--
+-- - Alternative Sorting:
+--   - If "most recently used" was misinterpreted to mean oldest first, `ORDER BY last_used ASC`
+--     could be used, but `DESC` aligns with the problem's intent.
+--
+-- - Practice Platforms:
+--   - This problem is common in SQL practice platforms, often under "group-wise maximum" or
+--     "latest record" categories. Similar problems can be found on:
+--     - LeetCode: https://leetcode.com/study-plan/sql/ (e.g., "Department Highest Salary")
+--     - HackerRank: https://www.hackerrank.com/domains/sql (e.g., "Weather Observation Station")
+--     - StrataScratch: https://platform.stratascratch.com/coding (search for "latest record")
+--     - SQLZoo: https://sqlzoo.net/ (e.g., "SELECT within SELECT")
+--     - DataLemur: https://datalemur.com/questions (e.g., "Latest Transaction")
+--   - These platforms have problems requiring `GROUP BY` or window functions to select the most
+--     recent record per group, adaptable to bike usage scenarios.
+--
+-- This solution meets the requirement of finding the last usage time for each bike, using a
+-- `GROUP BY` approach with `ORDER BY ... DESC` to sort by most recent usage, and provides a
+-- clear, portable SQL query.
+```

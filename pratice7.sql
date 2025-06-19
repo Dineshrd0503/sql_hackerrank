@@ -1,0 +1,146 @@
+-- Question: Calculate the Absolute Difference Between Highest Salaries in Marketing and Engineering Departments
+--
+-- Problem Statement:
+-- You are tasked with calculating the absolute difference between the highest salaries of employees
+-- in the Marketing and Engineering departments. The result should be a single value representing
+-- the absolute difference in salaries.
+--
+-- Tables and Schema:
+-- The database contains two tables: `db_employee` and `db_dept`, with the following schemas:
+--
+-- Table: db_employee
+-- | Column Name   | Data Type |
+-- |---------------|-----------|
+-- | id            | bigint    |
+-- | first_name    | text      |
+-- | last_name     | text      |
+-- | salary        | bigint    |
+-- | department_id | bigint    |
+--
+-- Table: db_dept
+-- | Column Name | Data Type |
+-- |-------------|-----------|
+-- | id          | bigint    |
+-- | department  | text      |
+--
+-- - The `db_employee` table contains employee records, where `department_id` is a foreign key
+--   referencing the `id` column in the `db_dept` table.
+-- - The `db_dept` table contains department records, with `department` indicating the department
+--   name (e.g., 'Marketing', 'Engineering').
+-- - Assume that both the Marketing and Engineering departments exist in the `db_dept` table and
+--   have at least one employee in the `db_employee` table.
+--
+-- Requirements:
+-- - Write an SQL query to compute the absolute difference between the highest salary in the
+--   Marketing department and the highest salary in the Engineering department.
+-- - The output should be a single value representing the absolute difference.
+-- - Use a Common Table Expression (CTE) in the solution.
+--
+-- Answer:
+--
+-- SQL Code:
+WITH cte AS (
+    SELECT d.department, MAX(e.salary) AS maxsal
+    FROM db_employee e
+    JOIN db_dept d ON e.department_id = d.id
+    WHERE d.department IN ('Marketing', 'Engineering')
+    GROUP BY d.department
+)
+SELECT ABS(MAX(maxsal) - MIN(maxsal)) AS salary_difference
+FROM cte;
+
+-- Explanation of the Code:
+-- The SQL query uses a Common Table Expression (CTE) to calculate the maximum salary for the
+-- Marketing and Engineering departments and then computes the absolute difference between these
+-- maximum salaries. Below is a detailed breakdown of the code:
+--
+-- 1. CTE Definition (`WITH cte AS ...`):
+--    - The CTE, named `cte`, is defined to simplify the query by computing the maximum salary
+--      for each department.
+--    - Join Operation: The `db_employee` table (`e`) is joined with the `db_dept` table (`d`)
+--      using the condition `e.department_id = d.id` to associate each employee with their
+--      department.
+--    - Filtering: The `WHERE` clause restricts the results to only the 'Marketing' and
+--      'Engineering' departments using `d.department IN ('Marketing', 'Engineering')`.
+--    - Aggregation: The `MAX(e.salary)` function calculates the highest salary for each
+--      department, aliased as `maxsal`.
+--    - Grouping: The `GROUP BY d.department` clause groups the results by department,
+--      producing one row per department with its maximum salary.
+--
+-- 2. Main Query:
+--    - The main query operates on the `cte` result set, which contains two rows (one for
+--      Marketing and one for Engineering) with their respective maximum salaries.
+--    - Difference Calculation: The expression `MAX(maxsal) - MIN(maxsal)` computes the
+--      difference between the highest and lowest maximum salaries. Since there are only two
+--      departments, this gives the difference between their maximum salaries.
+--    - Absolute Value: The `ABS` function ensures the result is non-negative, providing the
+--      absolute difference as required.
+--    - Output: The result is aliased as `salary_difference` and returned as a single value.
+--
+-- 3. Assumptions and Considerations:
+--    - The query assumes that both Marketing and Engineering departments exist in `db_dept`
+--      and have at least one employee in `db_employee`. If either department has no employees,
+--      the CTE may return fewer than two rows, potentially leading to a NULL result.
+--    - The `ABS` function is used to ensure the output is the absolute difference, regardless
+--      of which department has the higher salary.
+--    - The query is case-sensitive for department names ('Marketing' and 'Engineering'). If
+--      the data uses different cases, the `WHERE` clause may need adjustment (e.g., using
+--      `LOWER(d.department)`).
+--
+-- Order of Execution:
+-- The SQL query is executed in the following logical order:
+--
+-- 1. FROM and JOIN (in the CTE):
+--    - The `db_employee` and `db_dept` tables are joined using the condition
+--      `e.department_id = d.id`. This creates a combined result set containing employee and
+--      department information.
+--
+-- 2. WHERE (in the CTE):
+--    - The `WHERE d.department IN ('Marketing', 'Engineering')` clause filters the joined
+--      result set to include only rows where the department is either 'Marketing' or
+--      'Engineering'.
+--
+-- 3. GROUP BY (in the CTE):
+--    - The results are grouped by `d.department`, so each department (Marketing and
+--      Engineering) forms a group.
+--
+-- 4. Aggregation (in the CTE):
+--    - The `MAX(e.salary)` function computes the maximum salary for each group, resulting
+--      in a result set with two rows: one for Marketing with its highest salary and one for
+--      Engineering with its highest salary.
+--
+-- 5. CTE Result:
+--    - The CTE, named `cte`, stores the result set with columns `department` and `maxsal`.
+--      For example:
+--        department  | maxsal
+--        ------------|--------
+--        Marketing   | 100000
+--        Engineering | 120000
+--
+-- 6. Main Query Execution:
+--    - The main query selects from the `cte` result set.
+--    - MAX(maxsal): Finds the highest value in the `maxsal` column (e.g., 120,000).
+--    - MIN(maxsal): Finds the lowest value in the `maxsal` column (e.g., 100,000).
+--    - Difference: Computes `MAX(maxsal) - MIN(maxsal)` (e.g., 120,000 - 100,000 = 20,000).
+--    - ABS: Applies the `ABS` function to ensure the result is non-negative
+--      (e.g., `ABS(20,000)` = 20,000).
+--    - The result is returned as a single column named `salary_difference`.
+--
+-- 7. Output:
+--    - The query returns a single value representing the absolute difference between the
+--      highest salaries in the Marketing and Engineering departments (e.g., 20,000).
+--
+-- Additional Notes:
+-- - Performance: The query is efficient for small to medium datasets, especially if indexes
+--   exist on `db_employee.department_id`, `db_employee.salary`, and `db_dept.id`. The CTE
+--   is evaluated once and reused, avoiding redundant computations.
+-- - Edge Cases: If either department has no employees, the CTE may return fewer than two
+--   rows, leading to a NULL or unexpected result. To handle this, you could add checks
+--   (e.g., using `COALESCE` or a `CASE` statement), but the query assumes data exists as
+--   per the schema.
+-- - Alternative Approaches: The same result could be achieved using subqueries or a
+--   self-join, but the CTE improves readability and maintainability.
+--
+-- This solution meets the requirement of using a CTE to compute the absolute difference
+-- between the highest salaries in the specified departments, with all non-code content
+-- formatted as SQL comments.
