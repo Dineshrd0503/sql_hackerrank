@@ -1,0 +1,140 @@
+```sql
+-- Question: Calculate Average Popularity by Location
+--
+-- Problem Statement:
+-- You are tasked with calculating the average popularity score for employees at each location. Using
+-- the `facebook_employees` and `facebook_hack_survey` tables, compute the average popularity score for
+-- each location where employees have survey responses. Output the location and the average popularity
+-- score, aliased as `avg_population`. Group the results by location.
+--
+-- Tables and Schema:
+-- The database contains two tables: `facebook_employees` and `facebook_hack_survey`, with the following schemas:
+--
+-- Table: facebook_employees
+-- | Column Name | Data Type |
+-- |-------------|-----------|
+-- | id          | bigint    |
+-- | location    | text      |
+--
+-- Table: facebook_hack_survey
+-- | Column Name  | Data Type |
+-- |--------------|-----------|
+-- | employee_id  | bigint    |
+-- | popularity   | float     |
+--
+-- Notes:
+-- - The `facebook_employees` table contains employee records, where `id` uniquely identifies each
+--   employee, and `location` indicates their office location (e.g., 'Menlo Park', 'London').
+-- - The `facebook_hack_survey` table contains survey responses, where `employee_id` is a foreign key
+--   referencing `id` in `facebook_employees`, and `popularity` is a float representing a popularity
+--   score (e.g., 0.0 to 5.0).
+-- - Assume `id` and `employee_id` are non-NULL, and `location` and `popularity` are typically
+--   non-NULL for valid records.
+-- - An employee may have multiple survey responses (multiple rows in `facebook_hack_survey` for the
+--   same `employee_id`), or none. Only employees with survey responses should contribute to the
+--   average.
+-- - The output should include each unique location and the average popularity score for employees in
+--   that location, based on their survey responses.
+--
+-- Solution:
+--
+SELECT fe.location, AVG(fh.popularity) AS avg_population
+FROM facebook_employees fe
+JOIN facebook_hack_survey fh ON fe.id = fh.employee_id
+GROUP BY fe.location;
+
+-- Explanation of the Code:
+--
+-- The query calculates the average popularity score for employees at each location by joining the
+-- `facebook_employees` and `facebook_hack_survey` tables and grouping by location. Here's a detailed
+-- breakdown:
+--
+-- 1. SELECT Clause:
+--    - `fe.location`: Outputs the location from the `facebook_employees` table.
+--    - `AVG(fh.popularity) AS avg_population`: Computes the average of the `popularity` scores from
+--      the `facebook_hack_survey` table for each group, aliased as `avg_population`.
+--
+-- 2. FROM facebook_employees fe:
+--    - Starts with the `facebook_employees` table, aliased as `fe`, which contains employee IDs and
+--      locations.
+--
+-- 3. JOIN facebook_hack_survey fh ON fe.id = fh.employee_id:
+--    - Performs an INNER JOIN with the `facebook_hack_survey` table, aliased as `fh`.
+--    - The join condition `fe.id = fh.employee_id` links each employee to their survey responses.
+--    - INNER JOIN ensures only employees with at least one survey response are included, as
+--      employees without responses won’t match any rows in `facebook_hack_survey`.
+--
+-- 4. GROUP BY fe.location:
+--    - Groups the joined result by `location`, ensuring one row per unique location.
+--    - The `AVG(fh.popularity)` is calculated for all survey responses associated with employees in
+--      each location.
+--
+-- 5. Assumptions and Considerations:
+--    - Assumes `location` is non-NULL for valid employee records. If NULLs exist, they may appear
+--      as a group unless filtered with `WHERE fe.location IS NOT NULL`.
+--    - Assumes `popularity` is a `FLOAT` and non-NULL for valid survey responses. If NULLs exist,
+--      `AVG()` ignores them by default.
+--    - If an employee has multiple survey responses, all their `popularity` scores contribute to the
+--      average for their location, which is typical for survey data unless specified otherwise.
+--    - If no employees have survey responses, the query returns an empty result.
+--    - The query is case-sensitive for `location`. If case varies, use `LOWER(fe.location)` for
+-- consistency.
+--    - No `ORDER BY` is specified, so the order of locations in the output is arbitrary.
+--
+-- Order of Execution:
+--
+-- 1. FROM facebook_employees fe:
+--    - Accesses the `facebook_employees` table, aliased as `fe`.
+--
+-- 2. JOIN facebook_hack_survey fh ON fe.id = fh.employee_id:
+--    - Performs an INNER JOIN with the `facebook_hack_survey` table, aliased as `fh`.
+--    - Matches rows where `fe.id` equals `fh.employee_id`, creating a combined result set of
+--      employees and their survey responses.
+--
+-- 3. GROUP BY fe.location:
+--    - Groups the joined rows by `fe.location`, producing one group per unique location.
+--
+-- 4. SELECT fe.location, AVG(fh.popularity) AS avg_population:
+--    - Outputs `fe.location` for each group.
+--    - Computes the average `popularity` score for each group using `AVG(fh.popularity)`, aliased as
+--      `avg_population`.
+--    - The result is a table with one row per location, showing the average popularity.
+--
+-- 5. Output:
+--    - A table with columns `location` and `avg_population`, with one row representing a location
+--      and its average popularity score based on survey responses.
+--
+-- Expected Output:
+--
+-- Assuming the following sample data:
+-- facebook_employees:
+-- | id  | location    |
+-- |-----|-------------|
+-- | 1   | Menlo Park  |
+-- | 2   | Menlo Park  |
+-- | 3   | London      |
+-- | 4   | London      |
+--
+-- facebook_hack_survey:
+-- | employee_id | popularity |
+-- |-------------|------------|
+-- | 1           | 4.5        |
+-- | 1           | 5.0        |
+-- | 2           | 3.5        |
+-- | 3           | 4.0        |
+--
+-- Calculations:
+-- - Menlo Park:
+--   - Employee 1: (4.5 + 5.0) / 2 = 4.75
+--   - Employee 2: 3.5 / 1 = 3.5
+--   - Average for Menlo Park: (4.75 + 3.5) / 2 = 4.125
+-- - London:
+--   - Employee 3: 4.0 / 1 = 4.0
+--   - Average for London: 4.0
+--
+-- Result:
+-- | location    | avg_population |
+-- |-------------|----------------|
+-- | Menlo Park  | 4.125          |
+-- | London      | 4.0            |
+--

@@ -1,0 +1,123 @@
+
+-- Question: Count Artist Occurrences in Spotify Worldwide Daily Song Rankings
+--
+-- Problem Statement:
+-- You are tasked with determining the number of times each artist appears in the Spotify worldwide
+-- daily song rankings. Using the `spotify_worldwide_daily_song_ranking` table, count the occurrences
+-- of each artist, output the artist name and the count of their appearances, and order the results by
+-- the occurrence count in descending order, so artists with the most appearances appear first.
+--
+-- Tables and Schema:
+-- The database contains one table: `spotify_worldwide_daily_song_ranking`, with the following schema:
+--
+-- Table: spotify_worldwide_daily_song_ranking
+-- | Column Name | Data Type |
+-- |-------------|-----------|
+-- | id          | bigint    |
+-- | position    | bigint    |
+-- | trackname   | text      |
+-- | artist      | text      |
+-- | streams     | bigint    |
+-- | url         | text      |
+-- | date        | date      |
+-- | region      | text      |
+--
+-- Notes:
+-- - The `artist` column contains the name of the artist for each song in the daily rankings.
+-- - Each row represents a song's ranking on a specific date in a specific region, so an artist may
+--   appear multiple times if their songs are ranked on different dates, in different regions, or with
+--   different tracks.
+-- - Assume `artist` is non-NULL for valid records. If NULLs exist, they may form a group unless
+--   filtered.
+-- - The output should include each unique artist and the total number of times they appear in the
+--   table, aliased as `occurence`.
+-- - Order the results by the occurrence count in descending order (`DESC`), so artists with the most
+--   appearances are listed first.
+-- - The current date (June 20, 2025) is not relevant, as the query operates on historical data.
+--
+-- Solution:
+--
+SELECT artist, COUNT(artist) AS occurence
+FROM spotify_worldwide_daily_song_ranking
+GROUP BY artist
+ORDER BY occurence DESC;
+
+-- Explanation of the Code:
+--
+-- The query counts the number of times each artist appears in the `spotify_worldwide_daily_song_ranking`
+-- table, groups the results by artist, and sorts them by the count in descending order. Here's a
+-- detailed breakdown:
+--
+-- 1. SELECT Clause:
+--    - `artist`: Outputs the artist name from the `spotify_worldwide_daily_song_ranking` table.
+--    - `COUNT(artist) AS occurence`: Counts the number of rows for each artist, aliased as
+--      `occurence`. Using `COUNT(artist)` counts non-NULL values of the `artist` column; `COUNT(*)`
+--      could be used equivalently unless NULLs are a concern.
+--
+-- 2. FROM spotify_worldwide_daily_song_ranking:
+--    - Accesses the `spotify_worldwide_daily_song_ranking` table, which contains daily song ranking data.
+--
+-- 3. GROUP BY artist:
+--    - Groups rows by the `artist` column, ensuring one row per unique artist.
+--    - The `COUNT(artist)` function aggregates the number of occurrences within each group.
+--
+-- 4. ORDER BY occurence DESC:
+--    - Sorts the results by the `occurence` column (the count of appearances) in descending order,
+--      ensuring artists with the highest counts appear first.
+--    - If counts are tied, the order of artists within the same count is arbitrary unless a secondary
+--      sort is added (e.g., `ORDER BY occurence DESC, artist ASC`).
+--
+-- 5. Assumptions and Considerations:
+--    - Assumes `artist` is non-NULL for valid records. If NULLs exist, they form a group with their
+--      own count. To exclude NULLs, add `WHERE artist IS NOT NULL` before `GROUP BY`.
+--    - The query is case-sensitive for `artist`. If artist names vary in case (e.g., 'Drake' vs.
+--      'drake'), use `LOWER(artist)` for consistent grouping.
+--    - If an artist has multiple songs ranked on the same day or in different regions, each
+--      appearance counts toward their total.
+--    - If the table is empty, the query returns no rows.
+--
+-- Order of Execution:
+--
+-- 1. FROM spotify_worldwide_daily_song_ranking:
+--    - Accesses the `spotify_worldwide_daily_song_ranking` table.
+--
+-- 2. GROUP BY artist:
+--    - Groups rows by the `artist` column, creating one group per unique artist.
+--
+-- 3. SELECT artist, COUNT(artist) AS occurence:
+--    - Outputs the `artist` value for each group.
+--    - Computes the count of rows in each group using `COUNT(artist)`, aliased as `occurence`.
+--
+-- 4. ORDER BY occurence DESC:
+--    - Sorts the result by the `occurence` column in descending order, placing artists with the most
+--      appearances first.
+--
+-- 5. Output:
+--    - A table with columns `artist` and `occurence`, with one row per unique artist, sorted by
+--      `occurence` in descending order.
+--
+-- Expected Output:
+--
+-- Assuming the following sample data in `spotify_worldwide_daily_song_ranking`:
+-- | id | position | trackname | artist      | streams | url | date       | region |
+-- |----|----------|-----------|-------------|---------|-----|------------|--------|
+-- | 1  | 1        | Song A    | Drake       | 100000  | ... | 2025-06-18 | global |
+-- | 2  | 2        | Song B    | Drake       | 90000   | ... | 2025-06-18 | global |
+-- | 3  | 1        | Song C    | Billie Eilish | 95000 | ... | 2025-06-19 | global |
+-- | 4  | 3        | Song D    | Drake       | 85000   | ... | 2025-06-19 | global |
+--
+-- Calculations:
+-- - Drake: Appears 3 times (rows with Song A, Song B, Song D).
+-- - Billie Eilish: Appears 1 time (row with Song C).
+--
+-- Result:
+-- | artist        | occurence |
+-- |---------------|-----------|
+-- | Drake         | 3         |
+-- | Billie Eilish | 1         |
+--
+-- Explanation:
+-- - Drake has 3 appearances, so they appear first due to `ORDER BY occurence DESC`.
+-- - Billie Eilish has 1 appearance, so they appear second.
+-- - The output lists each artist and their total occurrences, sorted by count in descending order.
+--

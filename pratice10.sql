@@ -1,0 +1,103 @@
+```sql
+-- Question: Retrieve Posts with Heart Reactions
+--
+-- Problem Statement:
+-- You are tasked with retrieving all details of Facebook posts that have received a 'heart' reaction.
+-- Output all columns from the `facebook_posts` table for posts where at least one user reacted with a
+-- 'heart' reaction. The result should include only posts that have such reactions, based on the
+-- `facebook_reactions` table.
+--
+-- Tables and Schema:
+-- The database contains two tables: `facebook_reactions` and `facebook_posts`, with the following schemas:
+--
+-- Table: facebook_reactions
+-- | Column Name | Data Type |
+-- |-------------|-----------|
+-- | post_id     | bigint    |
+-- | reaction    | text      |
+--
+-- Table: facebook_posts
+-- | Column Name | Data Type |
+-- |-------------|-----------|
+-- | post_id     | bigint    |
+-- | poster      | bigint    |
+-- | post_text   | text      |
+-- | post_date   | datetime  |
+--
+-- Notes:
+-- - The `facebook_reactions` table contains records of user reactions to posts, where `post_id` is a
+--   foreign key referencing `post_id` in the `facebook_posts` table, and `reaction` indicates the type
+--   of reaction (e.g., 'heart', 'like', 'sad').
+-- - The `facebook_posts` table contains post details, where `post_id` uniquely identifies each post,
+--   `poster` is the user ID of the person who made the post, `post_text` is the content, and
+--   `post_date` is the timestamp of the post.
+-- - Assume `post_id` and `reaction` in `facebook_reactions` are non-NULL, and `post_id` in
+--   `facebook_posts` is non-NULL.
+-- - A post may have multiple reactions or none. Only posts with at least one 'heart' reaction should
+--   be included in the output.
+-- - The query should return all columns from `facebook_posts` (i.e., `post_id`, `poster`,
+--   `post_text`, `post_date`).
+--
+-- Solution:
+--
+SELECT fp.*
+FROM facebook_reactions fr
+JOIN facebook_posts fp ON fr.post_id = fp.post_id
+WHERE fr.reaction = 'heart';
+
+-- Explanation of the Code:
+--
+-- The query retrieves all columns from the `facebook_posts` table for posts that have received a
+-- 'heart' reaction by joining with the `facebook_reactions` table. Here's a detailed breakdown:
+--
+-- 1. SELECT fp.*:
+--    - Selects all columns from the `facebook_posts` table (i.e., `post_id`, `poster`, `post_text`,
+--      `post_date`).
+--    - The `fp.*` syntax is a shorthand to include all columns of the aliased table `fp`
+--      (`facebook_posts`).
+--
+-- 2. FROM facebook_reactions fr:
+--    - Starts with the `facebook_reactions` table, aliased as `fr`, which contains reaction records.
+--
+-- 3. JOIN facebook_posts fp ON fr.post_id = fp.post_id:
+--    - Performs an INNER JOIN with the `facebook_posts` table, aliased as `fp`.
+--    - The join condition `fr.post_id = fp.post_id` links each reaction to its corresponding post.
+--    - INNER JOIN ensures only posts with matching reactions (i.e., those with 'heart' reactions after
+--      the WHERE clause) are included.
+--
+-- 4. WHERE fr.reaction = 'heart':
+--    - Filters the joined result to include only rows where the reaction is 'heart'.
+--    - Applied after the join, it ensures only posts with at least one 'heart' reaction are returned.
+--
+-- 5. Assumptions and Considerations:
+--    - Assumes `reaction` is case-sensitive ('heart' exact match). If case varies, use
+--      `LOWER(fr.reaction) = 'heart'`.
+--    - If a post has multiple 'heart' reactions, it appears once in the output due to the join
+--      mechanics (no `DISTINCT` needed unless duplicate posts exist in `facebook_posts`).
+--    - If no posts have 'heart' reactions, the query returns an empty result.
+--    - Indexes on `fr.post_id`, `fr.reaction`, and `fp.post_id` would improve performance.
+--
+-- Order of Execution:
+--
+-- 1. FROM facebook_reactions fr:
+--    - Accesses the `facebook_reactions` table, aliased as `fr`.
+--
+-- 2. JOIN facebook_posts fp ON fr.post_id = fp.post_id:
+--    - Performs an INNER JOIN with the `facebook_posts` table, aliased as `fp`.
+--    - Matches rows where `fr.post_id` equals `fp.post_id`, creating a combined result set of
+--      reactions and their corresponding posts.
+--
+-- 3. WHERE fr.reaction = 'heart':
+--    - Filters the joined result to include only rows where the `reaction` column in
+--      `facebook_reactions` is 'heart'.
+--
+-- 4. SELECT fp.*:
+--    - Selects all columns from the `facebook_posts` table (`post_id`, `poster`, `post_text`,
+--      `post_date`) for the filtered rows.
+--    - Each row corresponds to a post that has at least one 'heart' reaction.
+--
+-- 5. Output:
+--    - Returns a table with columns `post_id`, `poster`, `post_text`, `post_date` for posts with
+--      'heart' reactions.
+--    - If a post has multiple 'heart' reactions, it appears once, as the join doesn’t duplicate
+--      `facebook
