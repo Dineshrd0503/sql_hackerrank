@@ -1,0 +1,59 @@
+window functions
+
+1.rankings:- to find top 5 students
+2,lead or lag - to see sales diff b/w two days
+3.partiton by-to sum or avg same type of values
+4.cummulative sales
+5.moving avg - to find avg b/w yesterday and today
+
+rankings include
+1.rank 2.dense_rank
+3.row_number
+
+row_number:- assigns an unique indentifer for evey row based on a column
+no duplcaye values.
+dense_rank :- similar to row_number n=but ot allows duplicate values 
+rank:- skips the values for duplicate column entries
+
+datailerum
+to pratice sql queries
+
+1.row_number
+select customerId,total price,
+row_number() over (order by totalprice desc)
+from employee;
+
+use dense_rank for real time purposes
+
+2.dense_rank()
+select customerId,total price,
+dense_rank() over (order by totalprice desc)
+from employee;
+
+3.rank()
+select customerId,total price,
+rank() over (order by totalprice desc)
+from employee;
+
+4.lead()
+select month,total_price ,
+lag(total_price) over( order by month) 
+as prevous_sales from cte;
+
+5.partition by():-
+use to find a customer who buys two products etc.
+find the top 2 highest prodycts bought by customer
+
+ex:-
+select customer_id,productname,price,
+dense_rank() over(partition by custmoerid order by price desc) as rank
+from orders;
+
+to select only the top one product
+with cte as(
+select customer_id,productname,price,
+dense_rank() over(partition by custmoerid order by price desc) as rank
+from orders;
+)
+select * from cte
+where rnk<=1;
