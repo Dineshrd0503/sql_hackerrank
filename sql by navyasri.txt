@@ -1,0 +1,20 @@
+order of exectution
+
+from
+joins
+where
+group by
+having
+select
+distinct
+order by
+limit
+offset
+
+topics to learn
+
+1.joins
+2.sub queries
+3.cte
+4.window functions
+
